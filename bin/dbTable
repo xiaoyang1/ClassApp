@@ -1,0 +1,130 @@
+
+该文档为建立数据库表格的字段
+
+t_user  表， 存储用户信息  删除用户信息为软删除
+字段： id， 账号，密码，昵称，注册时间
+create table t_user(
+    id int primary key auto_increment,
+    username varchar(100),
+    entname varchar(100),
+    password varchar(100),
+    isdeleted int default 0,
+    registerTime datetime default CURRENT_TIMESTAMP,
+    email varchar(100) default null
+);
+
+
+#########################################
+所有人的打卡状态表
+t_check_in_status
+字段： 用户id，早起挑战次数，成功次数 （后续增加活动直接添加列字段）
+
+create table t_check_in_info(
+    userId int primary key,
+    countEarlyGetUp int default 0,
+    successEarlyGetUp int default 0,
+    countSport int default 0,
+    successSport int default 0,
+    foreign key (userId) references t_user(id),
+    constraint chk_early_get_up_status CHECK (countEarlyGetUp >= successEarlyGetUp),
+    constraint chk_sport_status CHECK (countSport >= successSport)
+);
+
+##########################################
+                            （每个活动一个表）
+
+t_early_get_up : 早起信息记录表
+字段：userId, ifToday, ifComplete, ifTomorrow(今天是预订，是否完成，明天是否预订)， ifDo 表示今日是否打卡
+约束：userId 必须在t_user中， ifToday >= ifComplete
+
+create table t_early_get_up(
+    userId int primary key,
+    ifToday int default 0,
+    ifComplete int default 0,
+    ifTomorrow int default 0,
+    ifDo int default 0,
+    foreign key (userId) references t_user(id),
+    constraint chk_status CHECK (ifToday >= ifComplete)
+);
+
+
+t_sport : 早起信息记录表
+字段：userId, ifToday, ifComplete, ifTomorrow(今天是预订，是否完成，明天是否预订)， ifDo 表示今日是否打卡
+约束：userId 必须在t_user中， ifToday >= ifComplete
+
+create table t_sport(
+    userId int primary key,
+    ifToday int default 0,
+    ifComplete int default 0,
+    ifDo int default 0,
+    foreign key (userId) references t_user(id),
+    constraint chk_status CHECK (ifToday >= ifComplete)
+);
+
+t_fund : 积分总表
+字段： userId， totalFund 总资产， earlyUpInvest 早起投资， sportIncome运动收益， income 今日收益
+create table t_fund(
+    userId int primary key,
+    totalFund  float default 100,
+    earlyUpInvestTod float default 0,
+    earlyUpInvestTom float default 0,
+    earlyUpIncome float default 0,
+    sportIncome float default 0,
+    income float default 0,
+    foreign key (userId) references t_user(id)
+);
+
+#########################################
+名言名句的表收集
+create table t_wisdom(
+     id int primary key auto_increment,
+     content varchar(500),
+     url varchar(100)
+);
+
+
+#########################################
+个人课程表
+create table t_schedule(
+    userId int primary key,
+    schedule  text,
+    lastModTime datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    isdeleted int default 0,
+    foreign key (userId) references t_user(id)
+);
+
+
+################################################ 存储过程和定时任务############################################
+功能旨在每天0点刷新当天的打卡任务，比如昨天预订打卡的，那么久应该在ifToday 设为1， 其他为0
+
+存储过程：
+DROP PROCEDURE IF EXISTS update_check_in_activity;
+delimiter //
+create procedure update_check_in_activity()
+begin
+    update t_early_get_up set ifToday = ifTomorrow;
+    update t_early_get_up set ifTomorrow = 0, ifComplete = 0, ifDo = 0;
+
+    update t_sport set ifToday = 0, ifComplete = 0, ifDo = 0;
+
+    update t_fund set earlyUpInvestTod = earlyUpInvestTom;
+    update t_fund set earlyUpInvestTom = 0, earlyUpIncome = 0, sportIncome = 0, income = 0;
+
+end //
+delimiter ;
+
+
+定时任务：
+
+drop event autoUpdate;
+create event if not exists autoUpdate
+on schedule every 1 day  STARTS '2018-8-8 00:00:00'
+do call update_check_in_activity();
+
+在命令行输入：
+SHOW VARIABLES LIKE '%sche%'; 查看是否开启定时器。
+SET GLOBAL event_scheduler = ON;开启定时器。
+show EVENTS 查看事件。
+alter event autoUpdate disable; 关闭事件
+alter event autoUpdate enable; 开启事件
+drop event autoUpdate;  删除事件

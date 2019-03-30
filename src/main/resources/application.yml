@@ -1,0 +1,59 @@
+server:
+  port: 8081
+  context-path: /classApp
+
+app-control:
+  version: 1       # 用户版本
+  download: http://pdmzhvxfg.bkt.clouddn.com/apk/jdkcbapp.apk
+  appName: 简易课程表
+  apkName: jdkcb.apk
+  devVersion: 1.0     # 开发版本
+  dicription: 本次修复0个bug   # 描述信息
+  ifForceUpdate: 1   # 是否强制更新， 0 代表 不， 1代表是
+
+
+spring:
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    username: admin
+    password: Lzstdio.2018
+    url: jdbc:mysql://47.100.165.187:3306/classApp?allowMultiQueries=true&characterEncoding=utf-8&useSSL=false
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 200
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+
+  #Http网络配置
+  http:
+    encoding:
+        enabled: true
+        charset: UTF-8
+        force: true
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+  # 邮箱配置
+  mail:
+    host: smtp.163.com
+    username: jdkcbcode@163.com
+    password: lzstudio2018
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.socketFactory.fallback : true
+      mail.smtp.starttls.enable: true
+      mail.smtp.socketFactory.class: javax.net.ssl.SSLSocketFactory
+      mail.smtp.socketFactory.port: 465
+
+#MyBatis连接配置
+mybatis:
+  type-aliases-package: cn.quantum.web.db.domain
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
